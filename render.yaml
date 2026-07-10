@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: pokergame
+    name: poker-arcade
     env: node
     plan: free
     buildCommand: npm install && npm run build

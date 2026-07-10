@@ -1,4 +1,4 @@
-# PokerGame
+# PokerArcade
 
 โป๊กเกอร์ UI ภาษาไทยทั้งหมด เล่นได้ทั้งกับบอทและมัลติเพลเยอร์จริง — Texas Hold'em, PLO (Pot-Limit Omaha), Choice Poker [Kakegurui], Doubt Poker [Kakegurui]
 

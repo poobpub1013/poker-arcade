@@ -1,5 +1,5 @@
 export const TH = {
-  appName: 'PokerGame',
+  appName: 'PokerArcade',
 
   home: {
     nameLabel: 'ชื่อผู้เล่น',
