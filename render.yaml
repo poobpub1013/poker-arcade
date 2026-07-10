@@ -4,4 +4,13 @@ services:
     env: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: NODE_ENV=production npm start
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render sets NODE_ENV=production for the whole build+run environment
+      # regardless of what's (or isn't) in this file, which makes npm skip
+      # devDependencies (vite, @vitejs/plugin-react) during `npm install` —
+      # this is the actual override npm respects to install them anyway.
+      - key: NPM_CONFIG_PRODUCTION
+        value: 'false'
