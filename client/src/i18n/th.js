@@ -133,6 +133,7 @@ export const TH = {
 
   table: {
     pot: 'กองกลาง',
+    timeLabel: 'เวลา',
     fold: 'Fold',
     check: 'Check',
     call: (amount) => `Call ${amount}`,

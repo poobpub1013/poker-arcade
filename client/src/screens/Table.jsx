@@ -18,18 +18,10 @@ import { TH } from '../i18n/th.js';
 import { leaveGame } from '../socket.js';
 import { playTimeWarningTick } from '../components/SoundManager.js';
 import { sortedHand } from '../utils/cards.js';
+import { useSeatPosition } from '../utils/tableLayout.js';
 
 const ACTION_TIMEOUT_MS = 35000;
 const ACTION_WARNING_MS = 10000;
-
-function seatPosition(index, total) {
-  const angle = Math.PI / 2 - (index * (2 * Math.PI)) / total;
-  const rx = 44;
-  const ry = 40;
-  const left = 50 + rx * Math.cos(angle);
-  const top = 50 + ry * Math.sin(angle);
-  return { left: `${left}%`, top: `${top}%` };
-}
 
 function ShowdownOverlay({ result, seats, board }) {
   if (!result) return null;
@@ -91,6 +83,7 @@ function StreetsTable() {
   const gameState = useGameStore((s) => s.gameState);
   const legalActions = useGameStore((s) => s.legalActions);
   const roomMode = useGameStore((s) => s.roomMode);
+  const seatPosition = useSeatPosition();
   const [now, setNow] = useState(Date.now());
   const lastTickSecondRef = useRef(null);
 

@@ -16,6 +16,7 @@ import { TH } from '../i18n/th.js';
 import { leaveGame, sendAction } from '../socket.js';
 import { playTimeWarningTick } from '../components/SoundManager.js';
 import { sortedHand } from '../utils/cards.js';
+import { useSeatPosition } from '../utils/tableLayout.js';
 
 const ACTION_TIMEOUT_MS = 35000;
 const ACTION_WARNING_MS = 10000;
@@ -35,15 +36,6 @@ const HAND_TYPES = [
   'royalFlush',
 ];
 const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
-
-function seatPosition(index, total) {
-  const angle = Math.PI / 2 - (index * (2 * Math.PI)) / total;
-  const rx = 44;
-  const ry = 40;
-  const left = 50 + rx * Math.cos(angle);
-  const top = 50 + ry * Math.sin(angle);
-  return { left: `${left}%`, top: `${top}%` };
-}
 
 function claimLabel(claim) {
   if (!claim) return '';
@@ -113,6 +105,7 @@ export default function DoubtPokerTable() {
   const gameState = useGameStore((s) => s.gameState);
   const legalActions = useGameStore((s) => s.legalActions);
   const roomMode = useGameStore((s) => s.roomMode);
+  const seatPosition = useSeatPosition();
   const [now, setNow] = useState(Date.now());
   const [discardSelection, setDiscardSelection] = useState(new Set());
   const [announceType, setAnnounceType] = useState(null);

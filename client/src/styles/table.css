@@ -481,25 +481,42 @@
   align-self: flex-start;
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  gap: 1px;
+  min-width: 58px;
+  padding: 5px 12px 6px;
   border-radius: 12px;
   background: var(--surface-alt);
   border: 2px solid var(--accent);
   color: var(--text);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.action-timer__label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.action-timer__value {
   font-weight: 800;
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .action-timer--warning {
   border-color: var(--danger);
   color: var(--danger);
   animation: turn-warning-blink 1s steps(1, start) infinite;
+}
+
+.action-timer--warning .action-timer__label {
+  opacity: 0.85;
 }
 
 .pause-btn {
@@ -717,4 +734,126 @@
 
 .showdown-row .card {
   animation: none;
+}
+
+/* ---- Phone layout -------------------------------------------------------
+
+   On a narrow portrait phone the desktop layout (a tall felt centered in the
+   viewport, with both the top HUD and the bottom action bar position:fixed
+   over it) crammed the top seats up under the turn-order/blind bars and the
+   bottom (own) seat down under the action bar. The fix keeps those bars fixed
+   but carves the felt into the gap between them: reserve vertical room top and
+   bottom via the screen's padding, center a deliberately shorter felt inside
+   what's left, and slim the seats so they don't spill over the felt's edges. */
+@media (max-width: 680px) {
+  /* Choice Poker (.choice-poker-screen) shares .table-screen but lays its two
+     players out as stacked rows, not seats around a felt, so it must keep the
+     default padding — only the felt-based screens (Hold'em/PLO/Doubt) get the
+     top/bottom reservation. */
+  .table-screen:not(.choice-poker-screen) {
+    justify-content: center;
+    /* top: clears the icon row (top:16 + 44) plus the blind/turn-order bar
+       below it. bottom: reserves room for the action bar so the own seat is
+       never painted over. */
+    padding: 126px 6px 216px;
+  }
+
+  .table-felt {
+    width: 96vw;
+    height: min(54vh, 420px);
+    margin: 0;
+    border-width: 10px;
+  }
+
+  /* Lift the board/pot above the own seat's (large) hole cards, which reach up
+     toward center on the shorter mobile felt. */
+  .table-center {
+    top: 44%;
+  }
+
+  .top-hud {
+    top: 64px;
+    gap: 6px;
+    max-width: calc(100vw - 12px);
+  }
+
+  .blind-info {
+    font-size: 0.72rem;
+    padding: 3px 12px;
+  }
+
+  .turn-order-panel {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    max-width: calc(100vw - 12px);
+  }
+
+  /* Slimmer seats so left/right seats don't hang past the felt rail and the
+     top/bottom seats take less vertical room. */
+  .seat {
+    width: 88px;
+    gap: 3px;
+  }
+
+  .seat__avatar {
+    width: 46px;
+    height: 46px;
+    border-width: 2px;
+  }
+
+  .seat__info {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+  }
+
+  .seat__name {
+    max-width: 82px;
+  }
+
+  /* Shrink the player's own hole cards on a phone. At the desktop xl size a
+     2-card Hold'em hand wraps inside the narrower seat (stacking up into the
+     center pot) and a 4-card PLO / 5-card Doubt hand is wide enough to collide
+     with the lower side seats. Smaller cards keep every hand a single readable
+     row that clears both. */
+  .seat__cards--you {
+    min-height: 56px;
+    max-width: none;
+  }
+
+  .seat__cards--you .card {
+    width: 38px;
+    height: 54px;
+    font-size: 0.85rem;
+  }
+
+  /* PLO (4) and Doubt (5) hold more cards, so shrink those a touch further to
+     keep the whole row clear of the lower side seats. */
+  .seat__cards--you.seat__cards--wide .card {
+    width: 32px;
+    height: 46px;
+    font-size: 0.72rem;
+  }
+
+  /* Compact action bar so the reserved bottom space (and thus the felt) fits.
+     Every variant's action bar reuses .betting-controls, so this covers them
+     all. */
+  .betting-controls {
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    gap: 7px;
+  }
+
+  .betting-controls__buttons {
+    gap: 8px;
+  }
+
+  .betting-controls__buttons .btn {
+    padding: 11px 10px;
+    font-size: 0.95rem;
+  }
+
+  .betting-controls__raise {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
 }
