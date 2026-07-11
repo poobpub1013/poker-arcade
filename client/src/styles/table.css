@@ -77,12 +77,60 @@
 }
 
 .card--joker {
-  background: linear-gradient(135deg, #2b1b4d 0%, #5b2a86 100%);
+  position: relative;
+  background: linear-gradient(155deg, #2b1b4d 0%, #6a2f96 45%, #b23f7d 100%);
+  border: 1.5px solid var(--chip-gold);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 8px rgba(224, 178, 58, 0.45);
+  overflow: hidden;
+}
+
+.card--joker::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.07) 0,
+    rgba(255, 255, 255, 0.07) 3px,
+    transparent 3px,
+    transparent 9px
+  );
+  pointer-events: none;
 }
 
 .card__joker-icon {
-  font-size: 1.3em;
+  width: 1.6em;
+  height: 1.47em;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+
+.card__joker-cap {
+  fill: var(--chip-gold);
+}
+
+.card__joker-bell {
+  fill: #fff8e6;
+  stroke: var(--chip-gold);
+  stroke-width: 1.5;
+}
+
+.card__joker-corner {
+  position: absolute;
+  font-size: 0.42em;
   line-height: 1;
+  color: var(--chip-gold);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.card__joker-corner--tl {
+  top: 3px;
+  left: 4px;
+}
+
+.card__joker-corner--br {
+  bottom: 3px;
+  right: 4px;
+  transform: rotate(180deg);
 }
 
 .card--back {
@@ -460,6 +508,79 @@
   top: 16px;
   right: 70px;
   z-index: 45;
+}
+
+.rules-btn {
+  position: fixed;
+  top: 16px;
+  left: 70px;
+  z-index: 45;
+}
+
+.rules-panel {
+  position: fixed;
+  top: 64px;
+  left: 16px;
+  z-index: 45;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(75vh, 560px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rules-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 8px 12px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.rules-panel__header h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.rules-panel__close {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rules-panel__body {
+  overflow-y: auto;
+  padding: 12px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rules-panel__subtitle {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+
+.hand-rank-list--compact .hand-rank-row {
+  padding: 6px 10px;
+  gap: 8px;
+}
+
+.hand-rank-list--compact .hand-rank-row__info h4 {
+  font-size: 0.85rem;
 }
 
 .chat-toast-stack {

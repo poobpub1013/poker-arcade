@@ -10,6 +10,7 @@ import Chat from '../components/Chat.jsx';
 import LeaveConfirm from '../components/LeaveConfirm.jsx';
 import RematchOverlay from '../components/RematchOverlay.jsx';
 import TurnOrderPanel from '../components/TurnOrderPanel.jsx';
+import RulesHelp from '../components/RulesHelp.jsx';
 import { TH } from '../i18n/th.js';
 import { leaveGame, sendAction } from '../socket.js';
 import { playTimeWarningTick } from '../components/SoundManager.js';
@@ -200,6 +201,7 @@ export default function DoubtPokerTable() {
       {roomMode === 'bot' && <PauseMenu paused={gameState.paused} />}
       {roomMode === 'multiplayer' && <LeaveConfirm />}
       {roomMode === 'multiplayer' && <Chat />}
+      <RulesHelp variantId="doubt-poker" />
 
       <div className="top-hud">
         {['draw', 'betting', 'doubt'].includes(gameState.phase) && (

@@ -1,19 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { TH } from '../i18n/th.js';
-
-const SUIT_SYMBOLS = { c: '♣', d: '♦', h: '♥', s: '♠' };
-const RANK_DISPLAY = { T: '10' };
-
-function MiniCard({ code }) {
-  const rank = code[0];
-  const suit = code[1];
-  const isRed = suit === 'd' || suit === 'h';
-  return (
-    <div className={`mini-card ${isRed ? 'mini-card--red' : 'mini-card--black'}`}>
-      {(RANK_DISPLAY[rank] || rank) + SUIT_SYMBOLS[suit]}
-    </div>
-  );
-}
+import MiniCard from '../components/MiniCard.jsx';
 
 export default function HowToPlay() {
   const navigate = useNavigate();

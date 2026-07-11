@@ -301,12 +301,14 @@ export class ChoicePokerEngine extends EventEmitter {
     }
 
     try {
+      const opponent = this.seats[1 - seatIndex];
       const decision = decideChoicePokerBet({
         myHand: seat.hand,
         opponentKnownHand,
         currentBet: this.currentBet,
         isOpening: this.currentBettorSeatIndex === -1,
         myStackTotal: seat.chips + seat.betThisHand,
+        opponentStackTotal: opponent.chips + opponent.betThisHand,
         personality: seat.personality,
         startingChips: this.startingChips,
       });

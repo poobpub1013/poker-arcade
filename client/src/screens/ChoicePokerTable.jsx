@@ -7,6 +7,7 @@ import PauseMenu from '../components/PauseMenu.jsx';
 import Chat from '../components/Chat.jsx';
 import LeaveConfirm from '../components/LeaveConfirm.jsx';
 import RematchOverlay from '../components/RematchOverlay.jsx';
+import RulesHelp from '../components/RulesHelp.jsx';
 import { TH } from '../i18n/th.js';
 import { leaveGame, sendAction } from '../socket.js';
 
@@ -141,6 +142,7 @@ export default function ChoicePokerTable() {
       {roomMode === 'bot' && <PauseMenu paused={gameState.paused} />}
       {roomMode === 'multiplayer' && <LeaveConfirm />}
       {roomMode === 'multiplayer' && <Chat />}
+      <RulesHelp variantId="choice-poker" />
 
       <div className="choice-board">
         <PlayerRow seat={opponent} isOpponent />

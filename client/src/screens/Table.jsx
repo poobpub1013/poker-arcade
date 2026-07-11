@@ -11,6 +11,7 @@ import Chat from '../components/Chat.jsx';
 import LeaveConfirm from '../components/LeaveConfirm.jsx';
 import RematchOverlay from '../components/RematchOverlay.jsx';
 import TurnOrderPanel from '../components/TurnOrderPanel.jsx';
+import RulesHelp from '../components/RulesHelp.jsx';
 import ChoicePokerTable from './ChoicePokerTable.jsx';
 import DoubtPokerTable from './DoubtPokerTable.jsx';
 import { TH } from '../i18n/th.js';
@@ -153,6 +154,7 @@ function StreetsTable() {
       {roomMode === 'bot' && <PauseMenu paused={gameState.paused} />}
       {roomMode === 'multiplayer' && <LeaveConfirm />}
       {roomMode === 'multiplayer' && <Chat />}
+      <RulesHelp variantId={gameState.variantId} />
 
       <div className="top-hud">
         {gameState.bigBlind != null && (
