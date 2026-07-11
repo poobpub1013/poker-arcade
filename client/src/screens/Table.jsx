@@ -173,9 +173,6 @@ function StreetsTable() {
             currentActorSeatId={gameState.currentActorSeatId}
           />
         )}
-        {isMyTurn && timeLeftMs !== null && timeLeftMs <= ACTION_WARNING_MS && (
-          <div className="turn-warning">{TH.table.timeRemaining(Math.ceil(timeLeftMs / 1000))}</div>
-        )}
       </div>
 
       <div className="table-felt">
@@ -199,7 +196,13 @@ function StreetsTable() {
       </div>
 
       {isMyTurn && (
-        <BettingControls legalActions={legalActions} pot={gameState.pot} currentBet={gameState.currentBet} />
+        <BettingControls
+          legalActions={legalActions}
+          pot={gameState.pot}
+          currentBet={gameState.currentBet}
+          timeLeftMs={timeLeftMs}
+          totalTimeMs={ACTION_TIMEOUT_MS}
+        />
       )}
 
       {showResult && (

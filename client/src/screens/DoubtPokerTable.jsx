@@ -11,6 +11,7 @@ import LeaveConfirm from '../components/LeaveConfirm.jsx';
 import RematchOverlay from '../components/RematchOverlay.jsx';
 import TurnOrderPanel from '../components/TurnOrderPanel.jsx';
 import RulesHelp from '../components/RulesHelp.jsx';
+import ActionTimer from '../components/ActionTimer.jsx';
 import { TH } from '../i18n/th.js';
 import { leaveGame, sendAction } from '../socket.js';
 import { playTimeWarningTick } from '../components/SoundManager.js';
@@ -125,11 +126,11 @@ export default function DoubtPokerTable() {
   }, [gameState?.phase, gameState?.currentActorSeatId, gameState?.actionDeadline]);
 
   const timeLeftMs = gameState?.actionDeadline ? Math.max(0, gameState.actionDeadline - now) : null;
-  // Betting, announce ("what am I going to lie about?"), and doubt are all
-  // timed, currentActor-driven turns sharing the same 35s clock — the
-  // warning countdown/tick should fire for all three, not just betting.
-  const isMyTimedTurn =
-    ['betting', 'announce', 'doubt'].includes(legalActions?.phase) && gameState?.currentActorSeatId === gameState?.you;
+  // Draw, betting, announce ("what am I going to lie about?"), and doubt are
+  // all timed turns sharing the same 35s clock — `legalActions` is already
+  // scoped to only be non-null when it's genuinely this viewer's turn to
+  // act, across all four phases, so its presence alone is the signal.
+  const isMyTimedTurn = ['draw', 'betting', 'announce', 'doubt'].includes(legalActions?.phase);
 
   useEffect(() => {
     if (!isMyTimedTurn || timeLeftMs === null) {
@@ -212,9 +213,6 @@ export default function DoubtPokerTable() {
             currentActorSeatId={gameState.currentActorSeatId}
           />
         )}
-        {isMyTimedTurn && timeLeftMs !== null && timeLeftMs <= ACTION_WARNING_MS && (
-          <div className="turn-warning">{TH.table.timeRemaining(Math.ceil(timeLeftMs / 1000))}</div>
-        )}
       </div>
 
       <div className="table-felt">
@@ -242,6 +240,7 @@ export default function DoubtPokerTable() {
 
       {legalActions?.phase === 'draw' && me && (
         <div className="betting-controls">
+          <ActionTimer timeLeftMs={timeLeftMs} totalTimeMs={ACTION_TIMEOUT_MS} />
           <p style={{ margin: 0 }}>{TH.doubtPoker.drawInstructions}</p>
           <div className="doubt-draw-hand">
             {sortedHand(me.holeCards).map(({ code, index }) => (
@@ -268,7 +267,13 @@ export default function DoubtPokerTable() {
       )}
 
       {legalActions?.phase === 'betting' && (
-        <BettingControls legalActions={legalActions} pot={gameState.pot} currentBet={gameState.currentBet} />
+        <BettingControls
+          legalActions={legalActions}
+          pot={gameState.pot}
+          currentBet={gameState.currentBet}
+          timeLeftMs={timeLeftMs}
+          totalTimeMs={ACTION_TIMEOUT_MS}
+        />
       )}
       {gameState.phase === 'betting' && legalActions?.phase !== 'betting' && (
         <div className="betting-controls">
@@ -278,6 +283,7 @@ export default function DoubtPokerTable() {
 
       {legalActions?.phase === 'announce' && (
         <div className="betting-controls">
+          <ActionTimer timeLeftMs={timeLeftMs} totalTimeMs={ACTION_TIMEOUT_MS} />
           <p style={{ margin: 0 }}>{TH.doubtPoker.announceTitle}</p>
           <div className="doubt-picker-row">
             {HAND_TYPES.map((t) => (
@@ -322,6 +328,7 @@ export default function DoubtPokerTable() {
 
       {legalActions?.phase === 'doubt' && (
         <div className="betting-controls">
+          <ActionTimer timeLeftMs={timeLeftMs} totalTimeMs={ACTION_TIMEOUT_MS} />
           <p style={{ margin: 0 }}>{TH.doubtPoker.doubtCostLabel(legalActions.doubtCost)}</p>
           <div className="betting-controls__buttons doubt-target-row">
             {legalActions.targets.map((targetId) => {

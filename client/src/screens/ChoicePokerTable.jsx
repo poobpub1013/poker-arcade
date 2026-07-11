@@ -8,8 +8,11 @@ import Chat from '../components/Chat.jsx';
 import LeaveConfirm from '../components/LeaveConfirm.jsx';
 import RematchOverlay from '../components/RematchOverlay.jsx';
 import RulesHelp from '../components/RulesHelp.jsx';
+import ActionTimer from '../components/ActionTimer.jsx';
 import { TH } from '../i18n/th.js';
 import { leaveGame, sendAction } from '../socket.js';
+
+const ACTION_TIMEOUT_MS = 35000;
 
 function PlayerRow({ seat, isOpponent, discardSelection, onToggleDiscard, canToggle }) {
   if (!seat) return null;
@@ -91,6 +94,7 @@ export default function ChoicePokerTable() {
   const roomMode = useGameStore((s) => s.roomMode);
   const [discardSelection, setDiscardSelection] = useState(new Set());
   const [raiseAmount, setRaiseAmount] = useState(0);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     setDiscardSelection(new Set());
@@ -99,6 +103,14 @@ export default function ChoicePokerTable() {
   useEffect(() => {
     if (legalActions?.phase === 'betting') setRaiseAmount(legalActions.minRaiseTo);
   }, [legalActions?.minRaiseTo, legalActions?.phase]);
+
+  useEffect(() => {
+    if (!gameState || !gameState.actionDeadline) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [gameState?.phase, gameState?.actionDeadline]);
+
+  const timeLeftMs = gameState?.actionDeadline ? Math.max(0, gameState.actionDeadline - now) : null;
 
   if (!gameState) {
     return (
@@ -178,6 +190,7 @@ export default function ChoicePokerTable() {
 
       {legalActions?.phase === 'draw' && (
         <div className="betting-controls">
+          <ActionTimer timeLeftMs={timeLeftMs} totalTimeMs={ACTION_TIMEOUT_MS} />
           <p style={{ margin: 0 }}>{TH.choicePoker.drawInstructions}</p>
           <div className="betting-controls__buttons">
             <button className="btn btn--primary" onClick={confirmDraw}>
@@ -194,6 +207,7 @@ export default function ChoicePokerTable() {
 
       {legalActions?.phase === 'betting' && (
         <div className="betting-controls">
+          <ActionTimer timeLeftMs={timeLeftMs} totalTimeMs={ACTION_TIMEOUT_MS} />
           <div className="betting-controls__raise">
             <input
               type="range"
@@ -232,6 +246,7 @@ export default function ChoicePokerTable() {
 
       {legalActions?.phase === 'choice' && (
         <div className="betting-controls">
+          <ActionTimer timeLeftMs={timeLeftMs} totalTimeMs={ACTION_TIMEOUT_MS} />
           <p style={{ margin: 0 }}>{TH.choicePoker.choiceTitle}</p>
           <div className="betting-controls__buttons">
             <button className="btn btn--primary" onClick={() => chooseDirection('stronger')}>

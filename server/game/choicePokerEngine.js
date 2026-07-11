@@ -494,6 +494,15 @@ export class ChoicePokerEngine extends EventEmitter {
       currentActorSeatId: this.currentActorSeatIndex >= 0 ? this.seats[this.currentActorSeatIndex]?.id : null,
       currentBettorSeatId: this.currentBettorSeatIndex >= 0 ? this.seats[this.currentBettorSeatIndex]?.id : null,
       actionDeadline: this.actionDeadline,
+      // Draw phase has no single "current actor" (both seats can be drawing
+      // at once), so unlike betting/choice there's no one shared deadline —
+      // each seat that hasn't drawn yet gets its own. Keyed by seat id so
+      // choicePokerStateView.js can hand each viewer just their own draw
+      // deadline as `actionDeadline`, letting the client use one uniform
+      // field regardless of phase.
+      drawDeadlines: Object.fromEntries(
+        Object.entries(this._drawDeadlines).map(([seatIndex, deadline]) => [this.seats[Number(seatIndex)].id, deadline])
+      ),
       currentBet: this.currentBet,
       chosenDirection: this.chosenDirection,
       paused: this.paused,

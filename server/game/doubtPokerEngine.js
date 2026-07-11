@@ -487,7 +487,26 @@ export class DoubtPokerEngine extends EventEmitter {
     const reserveFrac = 0.08 + (1 - aggression) * 0.17;
     const reserve = Math.max(this.bigBlind * 3, Math.round(stackTotal * reserveFrac));
     const softMax = Math.max(trueBounds.min, stackTotal - reserve);
-    return { min: trueBounds.min, max: Math.min(trueBounds.max, softMax) };
+
+    // The self-reserve above only protects THIS bot's own doubtCost
+    // affordability. But everything here happens in one single betting
+    // round (no further streets to spread value-betting across the way
+    // Hold'em/PLO does), and doubtCost is set table-wide to whatever this
+    // round's final bet turns out to be — so a raise that's perfectly
+    // sized off this bot's own stack can still price every OTHER survivor
+    // out of ever affording to challenge a bluff, especially once a couple
+    // of raises have chained together. If the shortest opponent still in
+    // the hand calls a bet of X, they're left with (their stack − X); for
+    // them to also be able to pay a doubtCost of X afterward needs
+    // X <= stack / 2, with a little headroom below that so a call doesn't
+    // leave them razor-thin even when the doubt then succeeds.
+    const opponents = this.seats.filter((s) => s.dealtIn && !s.folded && s.seatIndex !== seatIndex);
+    const shortestOpponentStack = opponents.length
+      ? Math.min(...opponents.map((s) => s.chips + s.committedStreet))
+      : stackTotal;
+    const affordabilityCeiling = Math.max(trueBounds.min, Math.round(shortestOpponentStack * 0.4));
+
+    return { min: trueBounds.min, max: Math.min(trueBounds.max, softMax, affordabilityCeiling) };
   }
 
   // _getBotRaiseBounds softens the *ceiling* a bot sizes its own raise
@@ -672,6 +691,12 @@ export class DoubtPokerEngine extends EventEmitter {
       top.committedTotal -= excess;
       top.allIn = top.chips === 0;
     }
+    // doubtCost is set to this.currentBet right after this call — it must
+    // track what was actually matched, not the raiser's pre-refund target.
+    // Otherwise a lone overbet/shove nobody could fully call still prices
+    // the whole table's Doubt out of reach even though that uncalled excess
+    // was just handed straight back to the raiser above.
+    this.currentBet = top.committedStreet;
   }
 
   // ---- Announce phase -------------------------------------------------------
@@ -973,6 +998,15 @@ export class DoubtPokerEngine extends EventEmitter {
       dealerSeatIndex: this.dealerSeatIndex,
       currentActorSeatId: this.currentActorSeatIndex >= 0 ? this.seats[this.currentActorSeatIndex]?.id : null,
       actionDeadline: this.actionDeadline,
+      // Draw phase has no single current actor (every dealt-in seat draws
+      // independently), so unlike betting/announce/doubt there's no one
+      // shared deadline — each seat that hasn't drawn yet gets its own.
+      // Keyed by seat id so doubtPokerStateView.js can hand each viewer just
+      // their own draw deadline as `actionDeadline`, letting the client use
+      // one uniform field regardless of phase.
+      drawDeadlines: Object.fromEntries(
+        Object.entries(this._drawDeadlines).map(([seatIndex, deadline]) => [this.seats[Number(seatIndex)].id, deadline])
+      ),
       currentBet: this.currentBet,
       minRaiseIncrement: this.minRaiseIncrement,
       doubtCost: this.doubtCost,

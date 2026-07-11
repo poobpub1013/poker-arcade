@@ -169,7 +169,6 @@ export const TH = {
     handNumber: (n) => `มือที่ ${n}`,
     blindLevel: (sb, bb) => `บลายด์ ${sb}/${bb}`,
     nextBlindIn: (n) => `เพิ่มในอีก ${n} มือ`,
-    timeRemaining: (n) => `⏱ เหลืออีก ${n} วินาที`,
     uncontestedWin: (name, amount) => `${name} ชนะกองกลาง ${amount} ชิพ (คู่ต่อสู้หมอบหมด)`,
     turnOrderLabel: 'ลำดับการเล่น',
   },

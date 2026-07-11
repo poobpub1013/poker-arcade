@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { TH } from '../i18n/th.js';
 import { sendAction } from '../socket.js';
+import ActionTimer from './ActionTimer.jsx';
 
-export default function BettingControls({ legalActions, pot, currentBet }) {
+export default function BettingControls({ legalActions, pot, currentBet, timeLeftMs, totalTimeMs }) {
   const [raiseTo, setRaiseTo] = useState(legalActions?.minRaiseTo || 0);
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export default function BettingControls({ legalActions, pot, currentBet }) {
 
   return (
     <div className="betting-controls">
+      <ActionTimer timeLeftMs={timeLeftMs} totalTimeMs={totalTimeMs} />
       {canRaise && (
         <div className="betting-controls__raise">
           <input

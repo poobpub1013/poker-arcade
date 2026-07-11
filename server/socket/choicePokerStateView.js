@@ -18,5 +18,10 @@ export function buildChoicePokerStateView(fullState, viewerId) {
     const drawnSet = new Set(seat.drawnIndices);
     return { ...seat, hand: seat.hand.map((c, i) => (drawnSet.has(i) ? c : null)) };
   });
-  return { ...fullState, seats, you: viewerId };
+  // Draw phase has no shared `actionDeadline` (see getState()) -- substitute
+  // this viewer's own draw deadline so the client can read `actionDeadline`
+  // the same way regardless of phase.
+  const { drawDeadlines, ...rest } = fullState;
+  const actionDeadline = fullState.phase === 'draw' ? drawDeadlines[viewerId] ?? null : fullState.actionDeadline;
+  return { ...rest, seats, you: viewerId, actionDeadline };
 }
