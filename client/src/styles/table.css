@@ -761,14 +761,48 @@
   .table-felt {
     width: 96vw;
     height: min(54vh, 420px);
+    /* Real mobile browsers spend 100px+ of the viewport on their own chrome
+       (URL bar, nav buttons), which vh ignores — a vh-sized felt overflows the
+       gap the padding reserves and slides under both fixed bars. dvh tracks
+       the *visible* viewport, so this sizes the felt to exactly fill the space
+       between the top HUD (126px) and the action bar (216px), with a floor so
+       it never collapses into unreadability. Kept after the vh line as a
+       progressive override for browsers that know dvh. */
+    height: clamp(270px, calc(100dvh - 348px), 420px);
     margin: 0;
     border-width: 10px;
   }
 
   /* Lift the board/pot above the own seat's (large) hole cards, which reach up
-     toward center on the shorter mobile felt. */
+     toward center on the shorter mobile felt — and let the seats paint OVER
+     the center stack (it's later in the DOM, so by default it wins): if the
+     board row and a mid-height side seat ever do meet, losing a sliver of a
+     card edge is fine, hiding a player's name/chips is not. */
   .table-center {
-    top: 44%;
+    /* Between the top seat's column (backs/name/badges reach ~the felt's 45%
+       line when it's the dealer or folded) and the own seat's raised hole
+       cards (which start ~62% down) — 48% clears both. */
+    top: 48%;
+    gap: 8px;
+    z-index: 0;
+  }
+
+  /* Shrink the board cards (and their placeholders) so the 5-card row plus
+     some air fits between the left/right seat columns instead of running
+     under them. */
+  .table-center .card {
+    width: 30px;
+    height: 42px;
+    font-size: 0.72rem;
+  }
+
+  .community-cards {
+    gap: 4px;
+  }
+
+  .pot-display {
+    font-size: 0.8rem;
+    padding: 5px 12px;
   }
 
   .top-hud {
@@ -789,16 +823,30 @@
   }
 
   /* Slimmer seats so left/right seats don't hang past the felt rail and the
-     top/bottom seats take less vertical room. */
+     top/bottom seats take less vertical room. z-index pairs with
+     .table-center's 0 above (seats must win any residual overlap). */
   .seat {
     width: 88px;
     gap: 3px;
+    z-index: 1;
   }
 
   .seat__avatar {
     width: 46px;
     height: 46px;
     border-width: 2px;
+  }
+
+  /* Opponents' face-down backs are purely decorative — shave them so the top
+     seat's full column (backs + avatar + name + badges) stays inside the felt
+     and clear of the board row below it. */
+  .seat__cards {
+    min-height: 34px;
+  }
+
+  .seat__cards .card--sm {
+    width: 24px;
+    height: 34px;
   }
 
   .seat__info {
