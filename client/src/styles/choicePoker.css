@@ -183,3 +183,54 @@
 .choice-dashboard__value--red {
   color: var(--danger);
 }
+
+/* ---- Phone layout -------------------------------------------------------
+
+   On desktop each player is one horizontal row: [identity | hand | bet]. On a
+   narrow phone that middle column is too thin to hold all five cards, so they
+   wrapped into a ragged 2-2-1 block. Instead, drop the hand onto its own
+   full-width line beneath the identity/bet line, so it reads as a single
+   straight row — and shrink the cards a touch (this table only) so five fit
+   comfortably across even a small screen. */
+@media (max-width: 680px) {
+  .choice-poker-screen {
+    padding: 20px 10px 200px;
+  }
+
+  .choice-board {
+    width: 100%;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .choice-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'info bet'
+      'hand hand';
+    gap: 10px 8px;
+    padding: 12px 14px;
+  }
+
+  .choice-row__info {
+    grid-area: info;
+  }
+
+  .choice-row__bet {
+    grid-area: bet;
+  }
+
+  .choice-row__hand {
+    grid-area: hand;
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  /* Uniform, slightly smaller cards so the whole five-card row fits the phone
+     width regardless of whether it's the player's (xl) or opponent's (lg) hand. */
+  .choice-row__hand .card {
+    width: 50px;
+    height: 70px;
+    font-size: 1.05rem;
+  }
+}
