@@ -907,13 +907,16 @@
 
   /* Compact action bar so the reserved bottom space (and thus the felt) fits.
      Every variant's action bar reuses .betting-controls, so this covers them
-     all. Make it transparent (no white slab) and frosted-glass blur so it
-     blends with the felt behind without opaque backdrop. */
+     all. Fully transparent like desktop — the screen reserves this space so
+     nothing sits behind the bar, and every control carries its own surface,
+     so any tint (even frosted --surface) just reads as a white slab on light
+     themes. */
   .betting-controls {
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-top: 1px solid var(--border);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-top: none;
+    box-shadow: none;
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     gap: 7px;
   }

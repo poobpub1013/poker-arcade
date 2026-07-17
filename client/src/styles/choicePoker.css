@@ -234,12 +234,14 @@
     font-size: 1.05rem;
   }
 
-  /* The shared action bar is theme --surface (white on light themes), which
-     clashes with this screen's forced dark casino backdrop. Keep the frosted
-     separation the phone needs, but tint it into the backdrop instead. */
+  /* This screen forces a dark casino backdrop regardless of theme, and its
+     bar carries bare text (draw/waiting instructions) that needs a light
+     color plus a soft tint to stay readable over the backdrop. The generic
+     mobile rule strips border-top entirely, so restore it with the full
+     shorthand — a color alone would not bring it back. */
   .choice-poker-screen .betting-controls {
     background: color-mix(in srgb, #140a10 82%, transparent);
-    border-top-color: rgba(212, 175, 55, 0.25);
+    border-top: 1px solid rgba(212, 175, 55, 0.25);
     color: #f0e6d8;
   }
 }
