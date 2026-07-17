@@ -147,8 +147,30 @@ export class DoubtPokerEngine extends EventEmitter {
     if (kind === 'nextHand') return HAND_END_DELAY_MS;
     const seatIndex = kind === 'action' ? this.currentActorSeatIndex : Number(kind.split('-')[1]);
     const seat = this.seats[seatIndex];
-    if (seat?.isBot) return BOT_MIN_DELAY_MS + Math.random() * (BOT_MAX_DELAY_MS - BOT_MIN_DELAY_MS);
-    return ACTION_TIMEOUT_MS;
+    if (!seat?.isBot) return ACTION_TIMEOUT_MS;
+
+    const base = BOT_MIN_DELAY_MS + Math.random() * (BOT_MAX_DELAY_MS - BOT_MIN_DELAY_MS);
+
+    // Betting: same human pacing as GameEngine — snap the trivial spots,
+    // genuinely think (occasionally tank) when a big bet lands on the bot.
+    if (this.phase === 'betting' && kind === 'action') {
+      const toCall = Math.max(0, this.currentBet - seat.committedStreet);
+      if (toCall <= this.bigBlind) return 1100 + Math.random() * 1900;
+      const pot = this.seats.reduce((sum, s) => sum + s.committedTotal, 0);
+      const pressure = Math.min(1, toCall / Math.max(1, Math.min(pot, seat.chips)));
+      let delay = base + pressure * 1800;
+      if (pressure > 0.5 && Math.random() < 0.18) delay += 2000 + Math.random() * 2500;
+      return delay;
+    }
+
+    // Announce/doubt are this game's "poker face" moments — composing a lie
+    // or weighing an accusation deserves visibly more thought than a
+    // mechanical fixed pause, so stretch the spread a little.
+    if (this.phase === 'announce' || this.phase === 'doubt') {
+      return base + Math.random() * 1600;
+    }
+
+    return base;
   }
 
   _arm(kind, fn, delay) {
@@ -214,6 +236,8 @@ export class DoubtPokerEngine extends EventEmitter {
       seat.revealed = false;
       seat.liar = false;
       seat.hasDoubted = false;
+      // Bot-only memory (bots.js): a bluff story lives for one hand at most.
+      seat._bluff = false;
     }
 
     this.deck = createShuffledDeck();

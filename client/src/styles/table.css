@@ -15,8 +15,21 @@
   background: radial-gradient(ellipse at center, var(--felt) 0%, #05170d 100%);
   border: 14px solid var(--felt-rail);
   border-radius: 50% / 45%;
-  box-shadow: var(--shadow);
+  box-shadow:
+    var(--shadow),
+    inset 0 0 60px rgba(0, 0, 0, 0.4);
   margin-bottom: 140px;
+}
+
+/* The inner "betting line" ring every real poker table has — one faint
+   ellipse inside the rail lifts the felt from a green blob to a table. */
+.table-felt::before {
+  content: '';
+  position: absolute;
+  inset: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.07);
+  border-radius: 50% / 45%;
+  pointer-events: none;
 }
 
 .table-center {
@@ -458,7 +471,13 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--surface);
+  /* Frosted glass over the page: keeps the bar clearly separate from the
+     felt behind it without a heavy opaque slab (matters most on mobile,
+     where the bar covers a real slice of the screen). Solid --surface is
+     the fallback where backdrop-filter isn't supported. */
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--border);
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   display: flex;
@@ -771,6 +790,10 @@
     height: clamp(270px, calc(100dvh - 348px), 420px);
     margin: 0;
     border-width: 10px;
+  }
+
+  .table-felt::before {
+    inset: 12px;
   }
 
   /* Lift the board/pot above the own seat's (large) hole cards, which reach up

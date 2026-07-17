@@ -118,10 +118,28 @@ export class GameEngine extends EventEmitter {
   }
 
   _delayFor(kind) {
-    if (kind === 'bot') return BOT_MIN_DELAY_MS + Math.random() * (BOT_MAX_DELAY_MS - BOT_MIN_DELAY_MS);
+    if (kind === 'bot') return this._botThinkDelay();
     if (kind === 'reveal') return STREET_REVEAL_DELAY_MS;
     if (kind === 'nextHand') return HAND_END_DELAY_MS;
     return 800;
+  }
+
+  // Uniform 2.9-4.1s for every action was its own bot tell: people snap-check
+  // free options and snap-call tiny bets, but genuinely stop and think when a
+  // big bet lands on them. Scale think time with how much of the pot (or the
+  // bot's own stack) the call would cost, with an occasional real tank on the
+  // biggest decisions.
+  _botThinkDelay() {
+    const seat = this.seats[this.currentActorSeatIndex];
+    const base = BOT_MIN_DELAY_MS + Math.random() * (BOT_MAX_DELAY_MS - BOT_MIN_DELAY_MS);
+    if (!seat) return base;
+    const toCall = Math.max(0, this.currentBet - seat.committedStreet);
+    if (toCall <= this.bigBlind) return 1100 + Math.random() * 1900;
+    const pot = this.seats.reduce((sum, s) => sum + s.committedTotal, 0);
+    const pressure = Math.min(1, toCall / Math.max(1, Math.min(pot, seat.chips)));
+    let delay = base + pressure * 1800;
+    if (pressure > 0.5 && Math.random() < 0.18) delay += 2000 + Math.random() * 2500;
+    return delay;
   }
 
   _arm(kind, fn, delay) {
@@ -187,6 +205,9 @@ export class GameEngine extends EventEmitter {
       seat.committedStreet = 0;
       seat.committedTotal = 0;
       seat.holeCards = [];
+      // Bot-only memory (bots.js): a bluff story lives for one hand at most.
+      // Never serialized — getState() maps seat fields explicitly.
+      seat._bluff = false;
     }
     for (const seat of this.seats) {
       // Clears the busted-out hand from the table once play moves on — kept

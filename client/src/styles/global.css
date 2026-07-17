@@ -16,6 +16,27 @@ body {
   min-height: 100vh;
 }
 
+/* A soft wash of the theme's accent bleeding down from the top of every
+   screen — pure decoration, but it keeps any theme from reading as a flat
+   gray void behind the panels. Fixed so it doesn't scroll away. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    62% 42% at 50% 0%,
+    color-mix(in srgb, var(--accent) 13%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
 button {
   font-family: inherit;
 }
@@ -37,10 +58,27 @@ button {
   gap: 12px;
 }
 
+/* The back button must never wrap to two lines next to a long Thai title on
+   a phone — keep it one compact line and let the title scale down instead. */
+.screen__header .btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 10px 16px;
+}
+
 .screen__title {
-  font-size: 1.6rem;
+  font-size: clamp(1.25rem, 5.2vw, 1.6rem);
   font-weight: 700;
   margin: 0;
+}
+
+/* On a phone the fixed mute button (44px circle at top:16/left:16) sits on
+   top of the header row's back button — shift the row right so they never
+   stack. Desktop centers the 720px header well clear of it. */
+@media (max-width: 680px) {
+  .screen__header {
+    padding-left: 52px;
+  }
 }
 
 .screen__body {
@@ -52,7 +90,7 @@ button {
 }
 
 .btn {
-  border: none;
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px 22px;
   font-size: 1rem;
@@ -78,8 +116,12 @@ button {
 }
 
 .btn--primary {
-  background: var(--accent);
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
   color: var(--accent-text);
+  border-color: transparent;
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--accent) 30%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .btn--ghost {
@@ -91,6 +133,7 @@ button {
 .btn--danger {
   background: var(--danger);
   color: #fff;
+  border-color: transparent;
 }
 
 .btn--kick {
@@ -158,6 +201,12 @@ button {
   width: 100%;
 }
 
+/* Every slider in the app (player count, raise amount) should carry the
+   theme's accent — the browser default blue clashed with all five themes. */
+input[type='range'] {
+  accent-color: var(--accent);
+}
+
 .field--checkbox label {
   display: flex;
   flex-direction: row;
@@ -217,7 +266,38 @@ button {
   padding: 20px;
   cursor: pointer;
   box-shadow: var(--shadow);
-  transition: transform 0.12s ease;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+  overflow: hidden;
+}
+
+/* A big faint card-suit in each card's corner — the grid cycles through
+   ♠ ♥ ♦ ♣ so a list of plain white rectangles reads as a hand of cards
+   instead. Decorative only, so it must never catch clicks. */
+.option-card::after {
+  content: '♠';
+  position: absolute;
+  right: 10px;
+  bottom: -14px;
+  font-size: 4.2rem;
+  line-height: 1;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.option-grid .option-card:nth-child(4n + 2)::after {
+  content: '♥';
+  color: var(--card-red);
+  opacity: 0.1;
+}
+
+.option-grid .option-card:nth-child(4n + 3)::after {
+  content: '♦';
+  color: var(--card-red);
+  opacity: 0.1;
+}
+
+.option-grid .option-card:nth-child(4n)::after {
+  content: '♣';
 }
 
 .option-card__help {
@@ -247,6 +327,7 @@ button {
 
 .option-card:hover:not(.option-card--disabled) {
   transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .option-card--disabled {
@@ -273,6 +354,32 @@ button {
   border-radius: 999px;
   background: var(--surface-alt);
   color: var(--text-muted);
+}
+
+/* Home-screen wordmark: the title fades toward the accent at its base and a
+   small row of suits sits under it, so the landing page has some identity
+   beyond a bare bold word. */
+.app-logo {
+  margin: 6px 0 0;
+  font-size: clamp(2.2rem, 10vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  background: linear-gradient(180deg, var(--text) 35%, var(--accent) 135%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app-logo__suits {
+  display: flex;
+  gap: 16px;
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  color: var(--text-muted);
+}
+
+.app-logo__suits .suit--red {
+  color: var(--card-red);
 }
 
 .hand-rank-list {

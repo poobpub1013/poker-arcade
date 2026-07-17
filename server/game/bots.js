@@ -5,6 +5,21 @@ function callAction() {
   return { action: 'call' };
 }
 
+// Snaps a computed bet to the kind of number a person actually pushes in:
+// half-BB steps while it's small, whole BBs in the mid range, 5-BB chunks
+// once it's big. The raw formula's outputs (137, 213, ...) were one of the
+// clearest "that's a computer" tells at the table.
+function humanizeAmount(target, bigBlind, bounds) {
+  const step =
+    target < bigBlind * 8
+      ? Math.max(1, Math.round(bigBlind / 2))
+      : target < bigBlind * 25
+        ? bigBlind
+        : bigBlind * 5;
+  const rounded = Math.round(target / step) * step;
+  return Math.min(bounds.max, Math.max(bounds.min, rounded));
+}
+
 // Sizes the bet/raise as a fraction of the pot instead of interpolating
 // across the full min-raise..all-in range. The old range-based interpolation
 // scaled off the *stack*, so on a deep table even a merely-decent hand could
@@ -34,7 +49,7 @@ function raiseOrBet(seat, currentBet, bigBlind, getRaiseBounds, equity, personal
   fraction = Math.max(0.25, Math.min(1.3, fraction));
 
   let target = Math.round(currentBet + referencePot * fraction);
-  target = Math.min(bounds.max, Math.max(bounds.min, target));
+  target = humanizeAmount(target, bigBlind, bounds);
 
   // Avoid leaving an awkwardly small stack behind — just shove instead.
   if (bounds.max - target < bigBlind * 2) target = bounds.max;
@@ -68,12 +83,39 @@ export function decideBotAction({ seat, seats, board, currentBet, variant, bigBl
   }
   equity = Math.min(1, Math.max(0, equity + (Math.random() - 0.5) * 0.08));
 
-  const wantsToBluff = Math.random() < p.bluffFreq;
+  // A bluff is a story told across a whole hand, not a coin flipped at every
+  // single action — the old per-decision re-roll produced bots that fired a
+  // bluff raise and then instantly folded to the re-raise, or randomly went
+  // passive mid-story. `seat._bluff` (engine clears it each new hand) makes
+  // a bot that starts bluffing mostly keep barreling, and makes giving up a
+  // real decision it then sticks with.
+  let wantsToBluff;
+  if (seat._bluff) {
+    wantsToBluff = Math.random() < 0.45 + p.aggression * 0.35;
+    if (!wantsToBluff) seat._bluff = false;
+  } else {
+    wantsToBluff = Math.random() < p.bluffFreq;
+  }
+
+  // Humans sometimes slowplay a monster — just flat-call or check it to keep
+  // the fish on the line — where the raw formula always raised big. Trappy
+  // personalities (high bluffFreq) do it more; pure aggressors less.
+  const wantsToTrap =
+    equity > 0.85 && !wantsToBluff && Math.random() < 0.08 + p.bluffFreq * 0.5 - p.aggression * 0.04;
+
+  const markBluffIfRaised = (decision) => {
+    if (wantsToBluff && equity < 0.6 && (decision.action === 'bet' || decision.action === 'raise')) {
+      seat._bluff = true;
+    }
+    return decision;
+  };
 
   if (toCall <= 0) {
     const betThreshold = 0.58 - p.aggression * 0.16;
-    if (equity > betThreshold || wantsToBluff) {
-      return raiseOrBet(seat, currentBet, bigBlind, getRaiseBounds, equity, p, potNow, toCall, wantsToBluff);
+    if ((equity > betThreshold || wantsToBluff) && !wantsToTrap) {
+      return markBluffIfRaised(
+        raiseOrBet(seat, currentBet, bigBlind, getRaiseBounds, equity, p, potNow, toCall, wantsToBluff)
+      );
     }
     return { action: 'check' };
   }
@@ -88,8 +130,14 @@ export function decideBotAction({ seat, seats, board, currentBet, variant, bigBl
   }
 
   const raiseThreshold = 0.72 - p.aggression * 0.18;
-  if ((equity > raiseThreshold || wantsToBluff) && Math.random() < 0.35 + p.aggression * 0.45) {
-    return raiseOrBet(seat, currentBet, bigBlind, getRaiseBounds, equity, p, potNow, toCall, wantsToBluff);
+  if (
+    (equity > raiseThreshold || wantsToBluff) &&
+    !wantsToTrap &&
+    Math.random() < 0.35 + p.aggression * 0.45
+  ) {
+    return markBluffIfRaised(
+      raiseOrBet(seat, currentBet, bigBlind, getRaiseBounds, equity, p, potNow, toCall, wantsToBluff)
+    );
   }
 
   return callAction();

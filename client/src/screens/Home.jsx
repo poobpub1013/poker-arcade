@@ -27,9 +27,13 @@ export default function Home() {
   return (
     <div className="screen">
       <div className="screen__body" style={{ alignItems: 'center', textAlign: 'center' }}>
-        <h1 className="screen__title" style={{ fontSize: '2.6rem' }}>
-          {TH.appName}
-        </h1>
+        <h1 className="app-logo">{TH.appName}</h1>
+        <p className="app-logo__suits" aria-hidden="true">
+          <span>♠</span>
+          <span className="suit--red">♥</span>
+          <span className="suit--red">♦</span>
+          <span>♣</span>
+        </p>
 
         <AvatarUpload name={name} avatar={avatar} onChange={setAvatar} />
 
