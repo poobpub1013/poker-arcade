@@ -229,6 +229,13 @@ input[type='range'] {
   flex-wrap: wrap;
 }
 
+/* Pushes the +N stepper pills to the right edge, away from the pot-fraction
+   pills, so the two groups read as separate controls. Collapses when the row
+   wraps on narrow screens. */
+.chip-row__spacer {
+  flex: 1;
+}
+
 .chip-pill {
   background: var(--surface-alt);
   border: 1px solid var(--border);

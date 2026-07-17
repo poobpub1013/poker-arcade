@@ -15,6 +15,8 @@ export default function BettingControls({ legalActions, pot, currentBet, timeLef
   const { canCheck, canCall, callAmount, canRaise, minRaiseTo, maxRaiseTo } = legalActions;
 
   const quickRaise = (target) => setRaiseTo(Math.round(Math.min(maxRaiseTo, Math.max(minRaiseTo, target))));
+  const stepRaise = (delta) =>
+    setRaiseTo((prev) => Math.round(Math.min(maxRaiseTo, Math.max(minRaiseTo, prev + delta))));
 
   return (
     <div className="betting-controls">
@@ -38,6 +40,12 @@ export default function BettingControls({ legalActions, pot, currentBet, timeLef
             <button className="chip-pill" onClick={() => quickRaise(maxRaiseTo)}>
               {TH.table.allIn}
             </button>
+            <span className="chip-row__spacer" />
+            {[1, 5, 10, 100].map((delta) => (
+              <button key={delta} className="chip-pill" onClick={() => stepRaise(delta)}>
+                +{delta}
+              </button>
+            ))}
           </div>
         </div>
       )}

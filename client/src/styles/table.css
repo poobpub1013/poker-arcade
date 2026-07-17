@@ -928,3 +928,139 @@
     gap: 6px;
   }
 }
+
+/* ============================== Desktop (>680px) ============================
+   The felt-based screens (Hold'em/PLO/Doubt — everything but Choice Poker)
+   get top/bottom reservations like mobile, because the fixed top HUD and the
+   fixed action bar otherwise paint over the felt's top seat and the player's
+   own seat on shorter windows. */
+@media (min-width: 681px) {
+  /* Fold the blind/turn-order HUD into the icon-button row (mute/rules at
+     top-left, pause at top-right) instead of floating below it: centered over
+     the felt it covered the top seat's name and chips. 116px clears the two
+     44px icon buttons on the left and mirrors on the right so the content
+     stays visually centered. */
+  .top-hud {
+    top: 16px;
+    left: 116px;
+    right: 116px;
+    transform: none;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    min-height: 44px;
+    gap: 10px;
+  }
+
+  /* Must shrink (min-width: 0) so its own overflow-x scrolling kicks in
+     instead of the panel pushing past the pause button. */
+  .top-hud .turn-order-panel {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .table-screen:not(.choice-poker-screen) {
+    /* top: icon/HUD row (16 + 44) plus the top seat's cards, which straddle
+       the rail and stick ~55px above the felt edge. bottom: the one-row
+       action strip plus the own seat's chips/dealer button hanging ~55px
+       below the felt edge. */
+    padding: 118px 16px 150px;
+  }
+
+  /* Size the felt to the space between the reservations so it never slides
+     under either fixed layer. The 380px floor is the least height where the
+     top seat's column, the board + pot, and the own seat's raised hole cards
+     all fit without stacking on each other. vh line is the fallback for
+     browsers without dvh. */
+  .table-screen:not(.choice-poker-screen) .table-felt {
+    height: min(72vh, 540px);
+    height: clamp(380px, calc(100dvh - 270px), 540px);
+  }
+
+  /* Same collision insurance as mobile: nudge the board/pot block up out of
+     the own seat's raised hole cards on squat felts, and let seats paint over
+     any residual overlap. */
+  .table-screen:not(.choice-poker-screen) .table-center {
+    top: 46%;
+    z-index: 0;
+  }
+
+  .table-screen:not(.choice-poker-screen) .seat {
+    z-index: 1;
+  }
+
+  /* Doubt Poker's action bar stays column-stacked (it hosts draw-phase cards
+     and announce pickers), so it needs a deeper bottom reservation. */
+  .doubt-poker-screen {
+    padding-bottom: 250px;
+  }
+
+  .doubt-poker-screen .table-felt {
+    height: min(72vh, 540px);
+    height: clamp(280px, calc(100dvh - 380px), 540px);
+  }
+
+  /* No full-width slab on desktop: the action bar becomes a transparent
+     floating strip aligned with the felt. Every control inside (timer chip,
+     pills, buttons) carries its own surface, so nothing needs the backdrop.
+     Choice and Doubt Poker keep the frosted bar — their bars host stacked
+     content (draw-phase cards, announce pickers) that runs tall enough to
+     reach the felt, where see-through controls would collide visually. */
+  .table-screen:not(.choice-poker-screen):not(.doubt-poker-screen) .betting-controls {
+    left: 50%;
+    right: auto;
+    bottom: 14px;
+    transform: translateX(-50%);
+    width: min(94vw, 900px);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-top: none;
+    box-shadow: none;
+    padding: 0 4px;
+  }
+
+  /* Hold'em/PLO only (Doubt shares BettingControls for its betting phase but
+     its other phases stack content, and one class covers them all): lay the
+     strip out as a single row — timer | slider + pills | action buttons —
+     so it hugs the bottom instead of stacking three rows tall. */
+  .table-screen:not(.choice-poker-screen):not(.doubt-poker-screen) .betting-controls {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .table-screen:not(.choice-poker-screen):not(.doubt-poker-screen) .betting-controls__raise {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .table-screen:not(.choice-poker-screen):not(.doubt-poker-screen)
+    .betting-controls__raise
+    input[type='range'] {
+    width: 100%;
+  }
+
+  /* Check/call-only turns render no raise block; keep the buttons pinned to
+     the right edge rather than drifting next to the timer. */
+  .table-screen:not(.choice-poker-screen):not(.doubt-poker-screen) .betting-controls__buttons {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .table-screen:not(.choice-poker-screen):not(.doubt-poker-screen) .betting-controls__buttons .btn {
+    min-width: 112px;
+    white-space: nowrap;
+  }
+
+  /* Slightly tighter pills so all seven (pot fractions + steppers) fit the
+     strip's middle column on one line. */
+  .table-screen:not(.choice-poker-screen):not(.doubt-poker-screen) .betting-controls .chip-pill {
+    padding: 5px 11px;
+    font-size: 0.82rem;
+  }
+}
