@@ -113,10 +113,10 @@ export default function DoubtPokerTable() {
   const lastTickSecondRef = useRef(null);
 
   useEffect(() => {
-    if (!gameState || !gameState.actionDeadline) return undefined;
+    if (!gameState || !gameState.actionDeadline || gameState.paused) return undefined;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
-  }, [gameState?.phase, gameState?.currentActorSeatId, gameState?.actionDeadline]);
+  }, [gameState?.phase, gameState?.currentActorSeatId, gameState?.actionDeadline, gameState?.paused]);
 
   const timeLeftMs = gameState?.actionDeadline ? Math.max(0, gameState.actionDeadline - now) : null;
   // Draw, betting, announce ("what am I going to lie about?"), and doubt are
