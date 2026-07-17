@@ -28,6 +28,13 @@ export function useSeatPosition() {
     const ry = narrow ? 35 : 40;
     const left = 50 + rx * Math.cos(angle);
     const top = 50 + ry * Math.sin(angle);
-    return { left: `${left}%`, top: `${top}%` };
+    // Stack seats top-down. A seat's badges/committed chips hang below its
+    // column while the seat below it on the same side pokes decorative card
+    // backs upward — when a short felt makes them meet, the chips
+    // (information) must paint over the backs (decoration). DOM order alone
+    // gets this right on one side of the table and exactly backwards on the
+    // other. Scaled to stay below the fixed bars' z-index: 30.
+    const zIndex = Math.max(1, Math.round((100 - top) / 10));
+    return { left: `${left}%`, top: `${top}%`, zIndex };
   };
 }

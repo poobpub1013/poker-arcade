@@ -113,6 +113,10 @@ export class GameEngine extends EventEmitter {
     this.paused = false;
     for (const [kind, fn] of Object.entries(this._pending)) {
       this._arm(kind, fn, kind === 'action' ? ACTION_TIMEOUT_MS : this._delayFor(kind));
+      // The actor's clock restarts in full here — refresh the advertised
+      // deadline too, or clients keep counting from the pre-pause timestamp
+      // and show 0 while the server is still happily waiting.
+      if (kind === 'action' || kind === 'bot') this.actionDeadline = Date.now() + ACTION_TIMEOUT_MS;
     }
     this._emitUpdate('resumed');
   }

@@ -139,6 +139,12 @@ export class DoubtPokerEngine extends EventEmitter {
     this.paused = false;
     for (const [kind, fn] of Object.entries(this._pending)) {
       this._arm(kind, fn, this._delayFor(kind));
+      // Timers restart in full on resume — refresh the advertised deadlines
+      // to match, or clients keep counting from the pre-pause timestamp.
+      if (kind === 'action') this.actionDeadline = Date.now() + ACTION_TIMEOUT_MS;
+      if (kind.startsWith('draw-')) {
+        this._drawDeadlines[Number(kind.slice('draw-'.length))] = Date.now() + ACTION_TIMEOUT_MS;
+      }
     }
     this._emitUpdate('resumed');
   }
