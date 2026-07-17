@@ -76,6 +76,7 @@ export class DoubtPokerEngine extends EventEmitter {
       committedTotal: 0,
       holeCards: [],
       hasDrawn: false,
+      drawnCount: 0,
       announcement: null,
       hasAnnounced: false,
       revealed: false,
@@ -175,27 +176,32 @@ export class DoubtPokerEngine extends EventEmitter {
     if (!seat?.isBot) return ACTION_TIMEOUT_MS;
 
     const base = BOT_MIN_DELAY_MS + Math.random() * (BOT_MAX_DELAY_MS - BOT_MIN_DELAY_MS);
+    // Personality pace stretches or snaps every kind of think (novice
+    // hesitates, sharp acts instantly); tilt makes any bot impulsive.
+    const p = seat.personality || {};
+    const pace = (p.pace ?? 1) * (seat._tiltHands > 0 ? 0.7 : 1);
 
     // Betting: same human pacing as GameEngine — snap the trivial spots,
     // genuinely think (occasionally tank) when a big bet lands on the bot.
     if (this.phase === 'betting' && kind === 'action') {
+      const fakeTank = p.fakeTank && Math.random() < p.fakeTank ? 1500 + Math.random() * 2500 : 0;
       const toCall = Math.max(0, this.currentBet - seat.committedStreet);
-      if (toCall <= this.bigBlind) return 1100 + Math.random() * 1900;
+      if (toCall <= this.bigBlind) return (1100 + Math.random() * 1900) * pace + fakeTank;
       const pot = this.seats.reduce((sum, s) => sum + s.committedTotal, 0);
       const pressure = Math.min(1, toCall / Math.max(1, Math.min(pot, seat.chips)));
-      let delay = base + pressure * 1800;
+      let delay = (base + pressure * 1800) * pace;
       if (pressure > 0.5 && Math.random() < 0.18) delay += 2000 + Math.random() * 2500;
-      return delay;
+      return delay + fakeTank;
     }
 
     // Announce/doubt are this game's "poker face" moments — composing a lie
     // or weighing an accusation deserves visibly more thought than a
     // mechanical fixed pause, so stretch the spread a little.
     if (this.phase === 'announce' || this.phase === 'doubt') {
-      return base + Math.random() * 1600;
+      return (base + Math.random() * 1600) * pace;
     }
 
-    return base;
+    return base * pace;
   }
 
   _arm(kind, fn, delay) {
@@ -256,6 +262,7 @@ export class DoubtPokerEngine extends EventEmitter {
       seat.committedTotal = 0;
       seat.holeCards = [];
       seat.hasDrawn = false;
+      seat.drawnCount = 0;
       seat.announcement = null;
       seat.hasAnnounced = false;
       seat.revealed = false;
@@ -263,6 +270,9 @@ export class DoubtPokerEngine extends EventEmitter {
       seat.hasDoubted = false;
       // Bot-only memory (bots.js): a bluff story lives for one hand at most.
       seat._bluff = false;
+      // Tilt (set by _rollTilt when this bot lost a big pot) burns off one
+      // hand at a time until the bot cools back down.
+      if (seat._tiltHands > 0) seat._tiltHands -= 1;
     }
 
     this.deck = createShuffledDeck();
@@ -376,6 +386,10 @@ export class DoubtPokerEngine extends EventEmitter {
       seat.holeCards[i] = this.deck.shift();
     }
     seat.hasDrawn = true;
+    // Public info, like the physical card exchange at a real draw table —
+    // everyone (humans on screen, bots in decideDoubtPokerDoubt) can weigh
+    // "stood pat then claimed a flush" against "drew 3 then claimed one".
+    seat.drawnCount = validIndices.length;
     delete this._drawDeadlines[seatIndex];
 
     this._emitUpdate('drew', { seatId: seat.id });
@@ -778,6 +792,7 @@ export class DoubtPokerEngine extends EventEmitter {
     try {
       const claim = decideDoubtPokerAnnouncement({
         hand: seat.holeCards,
+        seat,
         personality: seat.personality,
       });
       this._applyAnnounce(seatIndex, claim);
@@ -928,9 +943,23 @@ export class DoubtPokerEngine extends EventEmitter {
 
   // ---- Showdown -------------------------------------------------------------
 
+  // Same tilt rule as GameEngine: losing a big pot rattles the tilt-prone
+  // (aggressive) personalities into a few hot-headed hands — looser calls,
+  // wilder claims, quicker doubts — via effectivePersonality() in bots.js /
+  // doubtPokerBot.js. Bot-only memory, never serialized.
+  _rollTilt(seat) {
+    const proneness = 0.15 + (seat.personality?.aggression ?? 0.5) * 0.55;
+    if (Math.random() < proneness) seat._tiltHands = 3 + Math.floor(Math.random() * 2);
+  }
+
   _endHandUncontested(winnerSeat) {
     const totalPot = this.seats.filter((s) => s.dealtIn).reduce((sum, s) => sum + s.committedTotal, 0);
     winnerSeat.chips += totalPot;
+
+    for (const seat of this.seats) {
+      if (!seat.isBot || !seat.dealtIn || seat.id === winnerSeat.id) continue;
+      if (seat.committedTotal >= this.bigBlind * 12) this._rollTilt(seat);
+    }
     this.phase = 'showdown';
     this.currentActorSeatIndex = -1;
     this.actionDeadline = null;
@@ -972,11 +1001,21 @@ export class DoubtPokerEngine extends EventEmitter {
 
     const orderFromDealer = this._seatOrderFromDealer();
     const potResults = [];
+    const receivedById = new Map();
     for (const pot of pots) {
       const winners = this._determineClaimWinners(effectiveById, pot.eligiblePlayerIds);
       const shares = splitPotAmount(pot.amount, winners, orderFromDealer);
-      for (const [id, amt] of shares) this.seatById(id).chips += amt;
+      for (const [id, amt] of shares) {
+        this.seatById(id).chips += amt;
+        receivedById.set(id, (receivedById.get(id) || 0) + amt);
+      }
       potResults.push({ amount: pot.amount, winners });
+    }
+
+    for (const seat of this.seats) {
+      if (!seat.isBot || !seat.dealtIn) continue;
+      const lost = seat.committedTotal - (receivedById.get(seat.id) || 0);
+      if (lost >= this.bigBlind * 12) this._rollTilt(seat);
     }
 
     this.lastResult = {
@@ -1082,6 +1121,7 @@ export class DoubtPokerEngine extends EventEmitter {
         committedTotal: s.committedTotal,
         holeCards: s.holeCards,
         hasDrawn: s.hasDrawn,
+        drawnCount: s.drawnCount,
         announcement: s.announcement,
         hasAnnounced: s.hasAnnounced,
         revealed: s.revealed,

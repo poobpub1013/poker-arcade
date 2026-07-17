@@ -5,6 +5,22 @@ function callAction() {
   return { action: 'call' };
 }
 
+// Tilt: a bot that just lost a big pot (its engine sets seat._tiltHands and
+// burns one per new hand) chases the loss for a few hands — looser calls,
+// more bluffs, bigger bets — then cools back down to its normal self. Every
+// engine funnels its personality through here so the shift applies to
+// betting, doubting, and drawing alike.
+export function effectivePersonality(seat, personality) {
+  const p = personality || BOT_PERSONALITIES.sharp;
+  if (!(seat?._tiltHands > 0)) return p;
+  return {
+    ...p,
+    aggression: Math.min(1, p.aggression + 0.25),
+    looseness: Math.min(1, p.looseness + 0.25),
+    bluffFreq: Math.min(0.5, p.bluffFreq + 0.12),
+  };
+}
+
 // Snaps a computed bet to the kind of number a person actually pushes in:
 // half-BB steps while it's small, whole BBs in the mid range, 5-BB chunks
 // once it's big. The raw formula's outputs (137, 213, ...) were one of the
@@ -71,7 +87,7 @@ function raiseOrBet(seat, currentBet, bigBlind, getRaiseBounds, equity, personal
 // noise, occasional bluffs, an occasional "mistake" for novice-type bots)
 // keeps it from being fully predictable/exploitable.
 export function decideBotAction({ seat, seats, board, currentBet, variant, bigBlind, getRaiseBounds, personality }) {
-  const p = personality || BOT_PERSONALITIES.sharp;
+  const p = effectivePersonality(seat, personality);
   const toCall = currentBet - seat.committedStreet;
   const numOpponents = seats.filter((s) => s.dealtIn && !s.folded && s.seatIndex !== seat.seatIndex).length;
   const potNow = seats.reduce((sum, s) => sum + s.committedTotal, 0);

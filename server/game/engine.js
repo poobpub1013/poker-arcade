@@ -140,18 +140,24 @@ export class GameEngine extends EventEmitter {
   // free options and snap-call tiny bets, but genuinely stop and think when a
   // big bet lands on them. Scale think time with how much of the pot (or the
   // bot's own stack) the call would cost, with an occasional real tank on the
-  // biggest decisions.
+  // biggest decisions. The personality's pace stretches or snaps all of it
+  // (novice hesitates, sharp acts instantly), tilt makes any bot impulsive,
+  // and a fakeTank personality sometimes stalls easy spots on purpose so its
+  // long thinks stop being a reliable signal.
   _botThinkDelay() {
     const seat = this.seats[this.currentActorSeatIndex];
     const base = BOT_MIN_DELAY_MS + Math.random() * (BOT_MAX_DELAY_MS - BOT_MIN_DELAY_MS);
     if (!seat) return base;
+    const p = seat.personality || {};
+    const pace = (p.pace ?? 1) * (seat._tiltHands > 0 ? 0.7 : 1);
+    const fakeTank = p.fakeTank && Math.random() < p.fakeTank ? 1500 + Math.random() * 2500 : 0;
     const toCall = Math.max(0, this.currentBet - seat.committedStreet);
-    if (toCall <= this.bigBlind) return 1100 + Math.random() * 1900;
+    if (toCall <= this.bigBlind) return (1100 + Math.random() * 1900) * pace + fakeTank;
     const pot = this.seats.reduce((sum, s) => sum + s.committedTotal, 0);
     const pressure = Math.min(1, toCall / Math.max(1, Math.min(pot, seat.chips)));
-    let delay = base + pressure * 1800;
+    let delay = (base + pressure * 1800) * pace;
     if (pressure > 0.5 && Math.random() < 0.18) delay += 2000 + Math.random() * 2500;
-    return delay;
+    return delay + fakeTank;
   }
 
   _arm(kind, fn, delay) {
@@ -220,6 +226,9 @@ export class GameEngine extends EventEmitter {
       // Bot-only memory (bots.js): a bluff story lives for one hand at most.
       // Never serialized — getState() maps seat fields explicitly.
       seat._bluff = false;
+      // Tilt (set by _rollTilt when this bot lost a big pot) burns off one
+      // hand at a time until the bot cools back down.
+      if (seat._tiltHands > 0) seat._tiltHands -= 1;
     }
     for (const seat of this.seats) {
       // Clears the busted-out hand from the table once play moves on — kept
@@ -614,17 +623,25 @@ export class GameEngine extends EventEmitter {
     const orderFromDealer = this._seatOrderFromDealer();
 
     const potResults = [];
+    const receivedById = new Map();
     for (const pot of pots) {
       const winners = determineWinners(resultsById, pot.eligiblePlayerIds);
       const shareMap = splitPotAmount(pot.amount, winners, orderFromDealer);
       for (const [id, amt] of shareMap) {
         this.seatById(id).chips += amt;
+        receivedById.set(id, (receivedById.get(id) || 0) + amt);
       }
       potResults.push({
         amount: pot.amount,
         winners,
         description: resultsById.get(winners[0])?.description ?? '',
       });
+    }
+
+    for (const seat of this.seats) {
+      if (!seat.isBot || !seat.dealtIn) continue;
+      const lost = seat.committedTotal - (receivedById.get(seat.id) || 0);
+      if (lost >= this.bigBlind * 12) this._rollTilt(seat);
     }
 
     // Best hand first, so a glance at the top row tells you where you stand.
@@ -646,11 +663,28 @@ export class GameEngine extends EventEmitter {
     this._finishHand();
   }
 
+  // Losing a big pot rattles some players more than others: aggressive
+  // personalities are the tilt-prone ones, disciplined rocks mostly shrug it
+  // off. Sets bot-only memory that effectivePersonality() (bots.js) reads
+  // and startNextHand() burns down — never serialized.
+  _rollTilt(seat) {
+    const proneness = 0.15 + (seat.personality?.aggression ?? 0.5) * 0.55;
+    if (Math.random() < proneness) seat._tiltHands = 3 + Math.floor(Math.random() * 2);
+  }
+
   _endHandUncontested(winnerSeat) {
     const totalPot = this.seats
       .filter((s) => s.dealtIn)
       .reduce((sum, s) => sum + s.committedTotal, 0);
     winnerSeat.chips += totalPot;
+
+    // A bot that committed a real stack of chips and then had to let the pot
+    // go uncontested (bluff got jammed on, big draw got priced out) can tilt
+    // off that too — folding away a big investment stings like a showdown loss.
+    for (const seat of this.seats) {
+      if (!seat.isBot || !seat.dealtIn || seat.id === winnerSeat.id) continue;
+      if (seat.committedTotal >= this.bigBlind * 12) this._rollTilt(seat);
+    }
 
     this.phase = 'showdown';
     this.currentActorSeatIndex = -1;

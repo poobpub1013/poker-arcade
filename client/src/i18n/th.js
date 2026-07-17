@@ -239,6 +239,7 @@ export const TH = {
     announcedAs: (type, rank) => `ประกาศ: ${type}${rank ? ' ' + rank : ''}`,
     liarTag: 'โกหก!',
     honestTag: 'พูดจริง',
+    drewBadge: (n) => (n === 0 ? 'ไม่แลกไพ่' : `แลก ${n} ใบ`),
     hiddenTag: 'ไม่มีใครจับ',
     winnerAnnounce: (name) => `${name} ชนะกองกลาง`,
     handOverContinue: 'ไปมือถัดไป...',

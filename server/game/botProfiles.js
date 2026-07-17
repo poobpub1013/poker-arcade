@@ -5,17 +5,21 @@ import { shuffle } from './deck.js';
 // 0..1: aggression (how light a hand it bets/raises with, and how big),
 // looseness (how much worse than "correct" pot odds it's willing to continue
 // with), bluffFreq (chance it fires regardless of its actual equity).
+// pace multiplies think time (engines' bot delay): <1 snaps decisions, >1
+// hesitates — timing is a personality tell just like sizing. fakeTank is the
+// chance to stall on an easy spot so a long think stops being a reliable
+// "big decision" signal from that bot.
 export const BOT_PERSONALITIES = {
-  calm: { aggression: 0.35, bluffFreq: 0.08, looseness: 0.42 },
-  aggressive: { aggression: 0.85, bluffFreq: 0.22, looseness: 0.62 },
-  sharp: { aggression: 0.55, bluffFreq: 0.16, looseness: 0.5 },
-  novice: { aggression: 0.5, bluffFreq: 0.12, looseness: 0.7, mistakeRate: 0.18 },
-  gambler: { aggression: 0.7, bluffFreq: 0.28, looseness: 0.8 },
-  careful: { aggression: 0.3, bluffFreq: 0.05, looseness: 0.3 },
-  rock: { aggression: 0.25, bluffFreq: 0.03, looseness: 0.2 },
-  trickster: { aggression: 0.6, bluffFreq: 0.35, looseness: 0.55 },
-  brawler: { aggression: 0.9, bluffFreq: 0.18, looseness: 0.65 },
-  station: { aggression: 0.2, bluffFreq: 0.04, looseness: 0.75 },
+  calm: { aggression: 0.35, bluffFreq: 0.08, looseness: 0.42, pace: 1.15 },
+  aggressive: { aggression: 0.85, bluffFreq: 0.22, looseness: 0.62, pace: 0.8 },
+  sharp: { aggression: 0.55, bluffFreq: 0.16, looseness: 0.5, pace: 0.68 },
+  novice: { aggression: 0.5, bluffFreq: 0.12, looseness: 0.7, mistakeRate: 0.18, pace: 1.45 },
+  gambler: { aggression: 0.7, bluffFreq: 0.28, looseness: 0.8, pace: 0.85 },
+  careful: { aggression: 0.3, bluffFreq: 0.05, looseness: 0.3, pace: 1.3 },
+  rock: { aggression: 0.25, bluffFreq: 0.03, looseness: 0.2, pace: 1.05 },
+  trickster: { aggression: 0.6, bluffFreq: 0.35, looseness: 0.55, pace: 1.0, fakeTank: 0.22 },
+  brawler: { aggression: 0.9, bluffFreq: 0.18, looseness: 0.65, pace: 0.75 },
+  station: { aggression: 0.2, bluffFreq: 0.04, looseness: 0.75, pace: 0.9 },
 };
 
 const BOT_TEMPLATES = [

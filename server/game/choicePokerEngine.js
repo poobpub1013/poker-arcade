@@ -3,6 +3,7 @@ import { createShuffledDeckWithJoker } from './choicePokerDeck.js';
 import { evaluateChoiceHand, compareByDirection } from './choicePokerHandEvaluator.js';
 import { splitPotAmount } from './pot.js';
 import { decideChoicePokerDraw, decideChoicePokerBet, decideChoicePokerDirection } from './choicePokerBot.js';
+import { effectivePersonality } from './bots.js';
 import { ACTION_TIMEOUT_MS, BOT_MIN_DELAY_MS, BOT_MAX_DELAY_MS } from '../config.js';
 
 const HAND_END_DELAY_MS = 5000;
@@ -130,7 +131,15 @@ export class ChoicePokerEngine extends EventEmitter {
     if (kind === 'nextHand') return HAND_END_DELAY_MS;
     const seatIndex = kind === 'action' ? this.currentActorSeatIndex : Number(kind.split('-')[1]);
     const seat = this.seats[seatIndex];
-    if (seat?.isBot) return BOT_MIN_DELAY_MS + Math.random() * (BOT_MAX_DELAY_MS - BOT_MIN_DELAY_MS);
+    if (seat?.isBot) {
+      // Personality pace makes think time a tell (novice hesitates, sharp
+      // snaps); tilt makes the bot impulsive; a fakeTank personality
+      // sometimes stalls on purpose so long thinks carry no information.
+      const p = seat.personality || {};
+      const pace = (p.pace ?? 1) * (seat._tiltHands > 0 ? 0.7 : 1);
+      const fakeTank = p.fakeTank && Math.random() < p.fakeTank ? 1500 + Math.random() * 2500 : 0;
+      return (BOT_MIN_DELAY_MS + Math.random() * (BOT_MAX_DELAY_MS - BOT_MIN_DELAY_MS)) * pace + fakeTank;
+    }
     return ACTION_TIMEOUT_MS;
   }
 
@@ -210,6 +219,9 @@ export class ChoicePokerEngine extends EventEmitter {
       seat.hasDrawn = false;
       seat.drawnIndices = new Set();
       seat.betThisHand = 0;
+      // Tilt (set at showdown when a bot loses a big pot) burns off one hand
+      // at a time — bot-only memory read via effectivePersonality().
+      if (seat._tiltHands > 0) seat._tiltHands -= 1;
     }
 
     this.phase = 'draw';
@@ -242,7 +254,7 @@ export class ChoicePokerEngine extends EventEmitter {
     const seat = this.seats[seatIndex];
     if (!seat || seat.hasDrawn) return;
     try {
-      const discardIndices = decideChoicePokerDraw(seat.hand, seat.personality);
+      const discardIndices = decideChoicePokerDraw(seat.hand, effectivePersonality(seat, seat.personality));
       this._applyDraw(seatIndex, discardIndices);
     } catch {
       this._applyDraw(seatIndex, []);
@@ -334,7 +346,7 @@ export class ChoicePokerEngine extends EventEmitter {
         isOpening: this.currentBettorSeatIndex === -1,
         myStackTotal: seat.chips + seat.betThisHand,
         opponentStackTotal: opponent.chips + opponent.betThisHand,
-        personality: seat.personality,
+        personality: effectivePersonality(seat, seat.personality),
         startingChips: this.startingChips,
       });
       if (decision.action === 'stand') this._applyStand(seatIndex);
@@ -479,6 +491,15 @@ export class ChoicePokerEngine extends EventEmitter {
       const winnerSeat = outcome === 'a' ? seatA : seatB;
       winnerIds = [winnerSeat.id];
       winnerSeat.chips += totalPot;
+
+      // Same tilt rule as the other engines, scaled to the duel: dropping a
+      // real chunk of the starting stack in one hand can send a tilt-prone
+      // (aggressive) bot into a few hot-headed hands.
+      const loserSeat = outcome === 'a' ? seatB : seatA;
+      if (loserSeat.isBot && loserSeat.betThisHand >= this.startingChips * 0.15) {
+        const proneness = 0.15 + (loserSeat.personality?.aggression ?? 0.5) * 0.55;
+        if (Math.random() < proneness) loserSeat._tiltHands = 3 + Math.floor(Math.random() * 2);
+      }
     }
 
     this.lastResult = {

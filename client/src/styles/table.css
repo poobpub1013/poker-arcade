@@ -433,6 +433,13 @@
   color: var(--accent-text);
 }
 
+/* Draw-exchange count (Doubt Poker) — informational, so muted rather than
+   colored like the claim/verdict badges next to it. */
+.badge--draw {
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
 .doubt-cost-line {
   margin: 0;
   color: var(--danger);

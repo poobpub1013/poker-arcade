@@ -53,6 +53,16 @@ function announcementBadge(seat) {
   return null;
 }
 
+// The draw exchange count is public information (like physically taking
+// cards at a real table) and is exactly what a Doubt decision should weigh —
+// "stood pat, then claimed a flush" vs "drew 3 and claimed one". Bots already
+// use it (doubtPokerBot.js), so show it to humans too. Hidden during the
+// draw phase itself so it never telegraphs a draw in progress.
+function drawBadge(seat, phase) {
+  if (phase === 'draw' || !seat.hasDrawn || seat.folded) return null;
+  return <span className="badge badge--draw">{TH.doubtPoker.drewBadge(seat.drawnCount ?? 0)}</span>;
+}
+
 function DoubtShowdownOverlay({ result, seats }) {
   if (!result) return null;
 
@@ -219,7 +229,12 @@ export default function DoubtPokerTable() {
             totalTimeMs={ACTION_TIMEOUT_MS}
             warningMs={ACTION_WARNING_MS}
             style={seatPosition(i, total)}
-            extraBadge={announcementBadge(seat)}
+            extraBadge={
+              <>
+                {drawBadge(seat, gameState.phase)}
+                {announcementBadge(seat)}
+              </>
+            }
           />
         ))}
 
