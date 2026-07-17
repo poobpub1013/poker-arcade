@@ -233,4 +233,13 @@
     height: 70px;
     font-size: 1.05rem;
   }
+
+  /* The shared action bar is theme --surface (white on light themes), which
+     clashes with this screen's forced dark casino backdrop. Keep the frosted
+     separation the phone needs, but tint it into the backdrop instead. */
+  .choice-poker-screen .betting-controls {
+    background: color-mix(in srgb, #140a10 82%, transparent);
+    border-top-color: rgba(212, 175, 55, 0.25);
+    color: #f0e6d8;
+  }
 }

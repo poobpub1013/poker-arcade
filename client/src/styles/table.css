@@ -991,23 +991,27 @@
   }
 
   /* Doubt Poker's action bar stays column-stacked (it hosts draw-phase cards
-     and announce pickers), so it needs a deeper bottom reservation. */
-  .doubt-poker-screen {
-    padding-bottom: 250px;
+     and announce pickers), so with a see-through bar the reservation must fit
+     its tallest phase (draw: timer + text + 5 cards + button ≈ 240px) plus
+     the own seat's furniture hanging ~107px below the felt edge. */
+  /* .table-screen is repeated so these outrank the generic
+     .table-screen:not(.choice-poker-screen) rules above — :not() carries its
+     argument's specificity, so the bare .doubt-poker-screen class alone
+     would lose. */
+  .table-screen.doubt-poker-screen {
+    padding-bottom: 360px;
   }
 
-  .doubt-poker-screen .table-felt {
+  .table-screen.doubt-poker-screen .table-felt {
     height: min(72vh, 540px);
-    height: clamp(280px, calc(100dvh - 380px), 540px);
+    height: clamp(280px, calc(100dvh - 480px), 540px);
   }
 
-  /* No full-width slab on desktop: the action bar becomes a transparent
-     floating strip aligned with the felt. Every control inside (timer chip,
-     pills, buttons) carries its own surface, so nothing needs the backdrop.
-     Choice and Doubt Poker keep the frosted bar — their bars host stacked
-     content (draw-phase cards, announce pickers) that runs tall enough to
-     reach the felt, where see-through controls would collide visually. */
-  .table-screen:not(.choice-poker-screen):not(.doubt-poker-screen) .betting-controls {
+  /* No full-width slab on desktop: every variant's action bar becomes a
+     transparent floating strip aligned with its play area. Every control
+     inside (timer chip, pills, cards, buttons) carries its own surface, so
+     nothing needs the backdrop. */
+  .table-screen .betting-controls {
     left: 50%;
     right: auto;
     bottom: 14px;
@@ -1019,6 +1023,14 @@
     border-top: none;
     box-shadow: none;
     padding: 0 4px;
+  }
+
+  /* Choice Poker's strip matches its 640px board, and its screen forces a
+     dark casino backdrop regardless of theme — the bar's bare text (draw and
+     waiting instructions) needs a light color to stay readable on it. */
+  .choice-poker-screen .betting-controls {
+    width: min(94vw, 640px);
+    color: #f0e6d8;
   }
 
   /* Hold'em/PLO only (Doubt shares BettingControls for its betting phase but

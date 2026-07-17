@@ -188,7 +188,13 @@ export class RoomManager {
   addBotToLobby(code, hostId) {
     const room = this._requireHostLobbyRoom(code, hostId);
     if (room.members.size >= room.maxPlayers) throw new Error('ห้องเต็มแล้ว');
-    const botIndex = [...room.members.values()].filter((m) => m.isBot).length;
+    // First free index, not the current bot count: after a kick the surviving
+    // indexes can be sparse (e.g. 1,2 after kicking 0), and a count-derived id
+    // collides with a live bot — Map.set would then overwrite that bot with an
+    // identical profile instead of adding a member. Refilling the freed index
+    // also revives the kicked slot's personality, keeping live bots distinct.
+    let botIndex = 0;
+    while (room.members.has(`bot-${code}-${botIndex}`)) botIndex++;
     const bot = createBotProfile(botIndex, room.botOrder);
     const id = `bot-${code}-${botIndex}`;
     room.members.set(id, { id, ...bot, isBot: true, connected: true });

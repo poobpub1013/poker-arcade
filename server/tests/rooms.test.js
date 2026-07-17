@@ -97,6 +97,35 @@ describe('RoomManager — multiplayer lobby', () => {
     expect(() => m.addBotToLobby(code, playerId)).toThrow(); // full now
   });
 
+  it('addBotToLobby refills a seat after a non-last bot is kicked', () => {
+    const m = freshManager();
+    const { code, playerId } = m.createLobbyRoom({
+      hostPlayer: { name: 'Host', avatar: null },
+      variantId: 'texas-holdem',
+      maxPlayers: 4,
+      startingChips: 1000,
+    });
+    m.addBotToLobby(code, playerId);
+    m.addBotToLobby(code, playerId);
+    m.addBotToLobby(code, playerId);
+    expect(m.getRoom(code).members.size).toBe(4);
+
+    // Kick the FIRST bot: surviving bot ids are sparse (1, 2), so a naive
+    // "next id = bot count" collides with the live bot-2 and Map.set would
+    // silently overwrite it instead of adding a member.
+    const firstBotId = [...m.getRoom(code).members.values()].find((mem) => mem.isBot).id;
+    m.kickMember(code, playerId, firstBotId);
+    expect(m.getRoom(code).members.size).toBe(3);
+
+    m.addBotToLobby(code, playerId);
+    expect(m.getRoom(code).members.size).toBe(4);
+
+    // All bots must remain distinct personalities (distinct ids/names).
+    const bots = [...m.getRoom(code).members.values()].filter((mem) => mem.isBot);
+    expect(new Set(bots.map((b) => b.id)).size).toBe(3);
+    expect(new Set(bots.map((b) => b.name)).size).toBe(3);
+  });
+
   it('updateLobbyConfig rejects for a fixed-size variant (Choice Poker)', () => {
     const m = freshManager();
     const { code, playerId } = m.createLobbyRoom({
