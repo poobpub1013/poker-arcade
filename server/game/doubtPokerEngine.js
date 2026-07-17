@@ -129,6 +129,15 @@ export class DoubtPokerEngine extends EventEmitter {
   pause() {
     if (this.paused) return;
     this.paused = true;
+    // Freeze every live clock (actor + per-seat draw timers): remember what
+    // was left so resume continues from the same numbers instead of granting
+    // fresh full turns.
+    this._pausedRemaining = {
+      action: this.actionDeadline ? Math.max(1000, this.actionDeadline - Date.now()) : null,
+      draws: Object.fromEntries(
+        Object.entries(this._drawDeadlines).map(([i, d]) => [i, d ? Math.max(1000, d - Date.now()) : null])
+      ),
+    };
     for (const kind of Object.keys(this._timers)) clearTimeout(this._timers[kind]);
     this._timers = {};
     this._emitUpdate('paused');
@@ -137,14 +146,24 @@ export class DoubtPokerEngine extends EventEmitter {
   resume() {
     if (!this.paused) return;
     this.paused = false;
+    const frozen = this._pausedRemaining || {};
+    this._pausedRemaining = null;
     for (const [kind, fn] of Object.entries(this._pending)) {
-      this._arm(kind, fn, this._delayFor(kind));
-      // Timers restart in full on resume — refresh the advertised deadlines
-      // to match, or clients keep counting from the pre-pause timestamp.
-      if (kind === 'action') this.actionDeadline = Date.now() + ACTION_TIMEOUT_MS;
-      if (kind.startsWith('draw-')) {
-        this._drawDeadlines[Number(kind.slice('draw-'.length))] = Date.now() + ACTION_TIMEOUT_MS;
+      // Humans get their frozen remaining time back; bots just restart their
+      // short think delay (their advertised deadline still continues, so the
+      // visible clock never jumps).
+      let delay = this._delayFor(kind);
+      if (kind === 'action') {
+        const remaining = frozen.action ?? ACTION_TIMEOUT_MS;
+        if (!this.seats[this.currentActorSeatIndex]?.isBot) delay = remaining;
+        this.actionDeadline = Date.now() + remaining;
+      } else if (kind.startsWith('draw-')) {
+        const seatIndex = Number(kind.slice('draw-'.length));
+        const remaining = frozen.draws?.[seatIndex] ?? ACTION_TIMEOUT_MS;
+        if (!this.seats[seatIndex]?.isBot) delay = remaining;
+        this._drawDeadlines[seatIndex] = Date.now() + remaining;
       }
+      this._arm(kind, fn, delay);
     }
     this._emitUpdate('resumed');
   }

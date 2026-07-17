@@ -103,6 +103,11 @@ export class GameEngine extends EventEmitter {
   pause() {
     if (this.paused) return;
     this.paused = true;
+    // Freeze the actor's clock: remember how much was left so resume
+    // continues from the same number instead of granting a fresh full turn.
+    this._pausedActionRemaining = this.actionDeadline
+      ? Math.max(1000, this.actionDeadline - Date.now())
+      : null;
     for (const kind of Object.keys(this._timers)) clearTimeout(this._timers[kind]);
     this._timers = {};
     this._emitUpdate('paused');
@@ -111,12 +116,15 @@ export class GameEngine extends EventEmitter {
   resume() {
     if (!this.paused) return;
     this.paused = false;
+    const remaining = this._pausedActionRemaining ?? ACTION_TIMEOUT_MS;
+    this._pausedActionRemaining = null;
     for (const [kind, fn] of Object.entries(this._pending)) {
-      this._arm(kind, fn, kind === 'action' ? ACTION_TIMEOUT_MS : this._delayFor(kind));
-      // The actor's clock restarts in full here — refresh the advertised
-      // deadline too, or clients keep counting from the pre-pause timestamp
-      // and show 0 while the server is still happily waiting.
-      if (kind === 'action' || kind === 'bot') this.actionDeadline = Date.now() + ACTION_TIMEOUT_MS;
+      this._arm(kind, fn, kind === 'action' ? remaining : this._delayFor(kind));
+      // Push the advertised deadline forward by the pause duration so the
+      // clock picks up exactly where the pause froze it — without this,
+      // clients keep counting from the pre-pause timestamp and show 0 while
+      // the server is still happily waiting.
+      if (kind === 'action' || kind === 'bot') this.actionDeadline = Date.now() + remaining;
     }
     this._emitUpdate('resumed');
   }
